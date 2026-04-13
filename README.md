@@ -136,6 +136,72 @@ The results match expectations:
 
 ---
 
+### Stress Test — All 6 Profiles
+
+Running `python -m src.main` with `RUN_ALL = True` executes three standard and three adversarial profiles back to back.
+
+---
+
+#### Profile A — High-Energy Rock Fan (Standard)
+
+`genre=rock | mood=intense | energy=0.88 | acoustic=no`
+
+![Profile A terminal output](profile%20recommendations%20screenshots/Screenshot%202026-04-12%20at%2010.37.07%20PM.png)
+
+Storm Runner scores 8.72 — the only song with both genre and mood matching. Gym Hero (#2, 5.68) gains the mood bonus only; no other song comes close to the top.
+
+---
+
+#### Profile B — Chill Lofi Listener (Standard)
+
+`genre=lofi | mood=chill | energy=0.38 | acoustic=yes`
+
+![Profile B terminal output](profile%20recommendations%20screenshots/Screenshot%202026-04-12%20at%2010.37.16%20PM.png)
+
+Three lofi songs fill the top 3 (Library Rain 8.80, Midnight Coding 8.59, Focus Flow 6.73). Spacewalk Thoughts (#4) earns a spot via mood match despite being ambient — showing mood can partially compensate for a genre miss.
+
+---
+
+#### Profile C — Upbeat Pop Dancer (Standard)
+
+`genre=pop | mood=happy | energy=0.85 | acoustic=no`
+
+![Profile C terminal output](profile%20recommendations%20screenshots/Screenshot%202026-04-12%20at%2010.37.26%20PM.png)
+
+Sunrise City wins with 8.72. Gym Hero (#2, 6.76) beats Rooftop Lights (#3, 5.46) because genre match (+3.0) outweighs mood match (+2.0) — confirming the weight ratio is working as designed.
+
+---
+
+#### Profile D — Sad but Energetic (Adversarial)
+
+`genre=edm | mood=sad | energy=0.90 | acoustic=no`
+
+![Profile D terminal output](profile%20recommendations%20screenshots/Screenshot%202026-04-12%20at%2010.37.36%20PM.png)
+
+**Bias exposed:** Drop Zone (euphoric EDM, valence 0.82) ranks #1 at 6.31 despite the user wanting `mood=sad`. The genre bonus (+3.0) overwhelms the valence mismatch. The genuinely sad song Empty Chairs only reaches #2 at 4.05 — a sad user gets a euphoric recommendation.
+
+---
+
+#### Profile E — Genre Ghost / Country (Adversarial)
+
+`genre=country | mood=relaxed | energy=0.38 | acoustic=yes`
+
+![Profile E terminal output](profile%20recommendations%20screenshots/Screenshot%202026-04-12%20at%2010.37.45%20PM.png)
+
+No country songs exist in the catalog — the genre bonus never fires. The system falls back to mood + numeric proximity and surfaces Coffee Shop Stories (jazz, relaxed, 5.81). The fallback behavior is stable even when genre is useless.
+
+---
+
+#### Profile F — Acoustic Rocker (Adversarial)
+
+`genre=rock | mood=intense | energy=0.90 | acoustic=yes`
+
+![Profile F terminal output](profile%20recommendations%20screenshots/Screenshot%202026-04-12%20at%2010.37.52%20PM.png)
+
+**Bias exposed:** Storm Runner still wins at 7.96 despite scoring only 0.10 on acousticness. The genre + mood categorical ceiling (5.0 pts) is too high to be overridden by a contradictory numeric preference — the `likes_acoustic` flag is effectively ignored when both categorical signals match.
+
+---
+
 ## Limitations and Risks
 
 Summarize some limitations of your recommender.
@@ -160,6 +226,10 @@ Write 1 to 2 paragraphs here about what you learned:
 
 - about how recommenders turn data into predictions
 - about where bias or unfairness could show up in systems like this
+
+The most surprising thing I learned is how much a recommender can feel accurate without actually understanding anything. When the lofi listener profile returned three lofi songs in exactly the right order, it genuinely felt like the system knew what that user wanted. But the code is just doing subtraction and comparing numbers. There is no taste, no judgment, and no awareness of what music actually sounds like to a human. That gap between what the output feels like and what is happening inside the code made me realize why it is so easy to over-trust AI systems. They can produce results that seem thoughtful even when the logic underneath is extremely simple.
+
+The biggest lesson about bias came from the adversarial profiles. When a user said their mood was "sad" but their favorite genre was EDM, the system recommended a euphoric dance track because the genre bonus was worth more points than the mood mismatch penalty. The system was not being unfair on purpose, it just could not weigh emotional fit against genre identity the way a human would. That taught me that bias in a recommender does not always come from bad intentions or bad data. Sometimes it comes from a weight being slightly too high, or from a catalog that does not have enough variety to let the right signals win. Small design choices that seem neutral can end up systematically failing certain types of users, and you usually do not notice until you test the edge cases on purpose.
 
 
 ---
